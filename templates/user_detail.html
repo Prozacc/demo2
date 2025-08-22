@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.username }} 的详情 - Flask + OpenGauss 示例{% endblock %}
+
+{% block content %}
+{% if user %}
+<div class="fade-in transition-all duration-700 opacity-0 transform translate-y-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+            <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800">
+                <i class="fa fa-user text-primary mr-2"></i>{{ user.username }} 的详情
+            </h1>
+            <p class="text-gray-500 mt-1">用户ID: {{ user.id }} | 加入日期: {{ user.join_date.strftime('%Y-%m-%d') }}</p>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-3">
+            <a href="{{ url_for('users_list') }}" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fa fa-arrow-left mr-1"></i> 返回列表
+            </a>
+            <button onclick="confirmDelete({{ user.id }}, '{{ user.username }}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                <i class="fa fa-trash mr-1"></i> 删除用户
+            </button>
+            <form id="delete-form" action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" class="hidden">
+            </form>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 用户信息卡片 -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="bg-gradient-to-r from-primary to-accent h-32 relative">
+                    <div class="absolute -bottom-16 left-6">
+                        <div class="w-32 h-32 bg-white rounded-full border-4 border-white card-shadow flex items-center justify-center text-5xl font-bold text-primary">
+                            {{ user.username[0].upper() }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-20 px-6 pb-6">
+                    <h2 class="text-xl font-bold text-center mb-1">{{ user.username }}</h2>
+                    <p class="text-gray-500 text-center mb-6">{{ user.email }}</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">年龄</h3>
+                            <p class="text-gray-900">{{ user.age or '未设置' }}</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">状态</h3>
+                            <p>
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ user.status }}
+                                </span>
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">加入日期</h3>
+                            <p class="text-gray-900">{{ user.join_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">最后登录</h3>
+                            <p class="text-gray-900">
+                                {% if user.last_login %}
+                                    {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    从未登录
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 活动日志 -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold">活动日志</h2>
+                </div>
+                
+                <div class="p-6">
+                    {% if activities and activities|length > 0 %}
+                    <div class="space-y-6">
+                        {% for activity in activities %}
+                        <div class="flex">
+                            <div class="flex flex-col items-center mr-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+                                    <i class="fa fa-{{ 'sign-in' if activity.action == '登录系统' else 'edit' if activity.action == '更新资料' else 'bar-chart' if activity.action == '查看报表' else 'download' if activity.action == '下载数据' else 'send' }}"></i>
+                                </div>
+                                {% if not loop.last %}
+                                <div class="w-0.5 h-full bg-gray-200 mt-2"></div>
+                                {% endif %}
+                            </div>
+                            <div class="pb-6 {% if not loop.last %}border-b border-gray-100{% endif %}">
+                                <p class="text-gray-900">{{ activity.action }}</p>
+                                <div class="flex items-center mt-1 text-sm text-gray-500">
+                                    <i class="fa fa-clock-o mr-1"></i>
+                                    <span>{{ activity.action_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                    <span class="mx-2">•</span>
+                                    <i class="fa fa-globe mr-1"></i>
+                                    <span>{{ activity.ip_address }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-10 text-gray-500">
+                        <i class="fa fa-history text-4xl mb-3"></i>
+                        <p>暂无活动记录</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-16">
+    <i class="fa fa-exclamation-triangle text-5xl text-yellow-500 mb-4"></i>
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">用户不存在</h1>
+    <p class="text-gray-600 mb-6">找不到指定的用户信息，请检查用户ID是否正确</p>
+    <a href="{{ url_for('users_list') }}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+        <i class="fa fa-arrow-left mr-2"></i> 返回用户列表
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 删除确认功能
+    function confirmDelete(userId, username) {
+        if (confirm(`确定要删除用户 "${username}" 吗？此操作不可撤销，将同时删除该用户的所有活动记录。`)) {
+            document.getElementById('delete-form').submit();
+        }
+    }
+    
+    // 添加滚动动画
+    document.addEventListener('DOMContentLoaded', function() {
+        const animateOnScroll = function() {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }
+            });
+        };
+        
+        window.addEventListener('scroll', animateOnScroll);
+        animateOnScroll(); // 初始检查
+    });
+</script>
+{% endblock %}

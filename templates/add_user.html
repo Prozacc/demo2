@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}添加新用户 - Flask + OpenGauss 示例{% endblock %}
+
+{% block content %}
+<div class="fade-in transition-all duration-700 opacity-0 transform translate-y-4 max-w-2xl mx-auto">
+    <div class="flex items-center mb-6">
+        <a href="{{ url_for('users_list') }}" class="text-gray-500 hover:text-gray-700 mr-2">
+            <i class="fa fa-arrow-left"></i>
+        </a>
+        <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800">
+            添加新用户
+        </h1>
+    </div>
+    
+    <div class="bg-white rounded-xl card-shadow p-6 md:p-8">
+        <form method="POST" class="space-y-6">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">用户名 <span class="text-red-500">*</span></label>
+                <input type="text" id="username" name="username" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                       placeholder="请输入用户名">
+                <p class="mt-1 text-xs text-gray-500">用户名应唯一，用于登录和显示</p>
+            </div>
+            
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">邮箱 <span class="text-red-500">*</span></label>
+                <input type="email" id="email" name="email" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                       placeholder="请输入邮箱地址">
+                <p class="mt-1 text-xs text-gray-500">请输入有效的邮箱地址，将用于账户验证</p>
+            </div>
+            
+            <div>
+                <label for="age" class="block text-sm font-medium text-gray-700 mb-1">年龄</label>
+                <input type="number" id="age" name="age" min="0" max="120"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                       placeholder="请输入年龄（可选）">
+            </div>
+            
+            <div class="pt-4 flex justify-end space-x-3">
+                <a href="{{ url_for('users_list') }}" class="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    取消
+                </a>
+                <button type="submit" class="px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-md flex items-center">
+                    <i class="fa fa-save mr-2"></i> 保存用户
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 表单验证
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // 验证用户名
+            if (usernameInput.value.trim().length < 3) {
+                setError(usernameInput, '用户名至少需要3个字符');
+                isValid = false;
+            } else {
+                clearError(usernameInput);
+            }
+            
+            // 验证邮箱格式
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(emailInput.value.trim())) {
+                setError(emailInput, '请输入有效的邮箱地址');
+                isValid = false;
+            } else {
+                clearError(emailInput);
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                // 滚动到第一个错误字段
+                const firstError = document.querySelector('.error-message');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+        
+        // 实时验证
+        usernameInput.addEventListener('blur', function() {
+            if (this.value.trim().length < 3) {
+                setError(this, '用户名至少需要3个字符');
+            } else {
+                clearError(this);
+            }
+        });
+        
+        emailInput.addEventListener('blur', function() {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(this.value.trim())) {
+                setError(this, '请输入有效的邮箱地址');
+            } else {
+                clearError(this);
+            }
+        });
+        
+        // 辅助函数：显示错误
+        function setError(input, message) {
+            clearError(input);
+            input.classList.add('border-red-500');
+            const errorElement = document.createElement('p');
+            errorElement.className = 'mt-1 text-xs text-red-500 error-message';
+            errorElement.textContent = message;
+            input.parentNode.appendChild(errorElement);
+        }
+        
+        // 辅助函数：清除错误
+        function clearError(input) {
+            input.classList.remove('border-red-500');
+            const existingError = input.parentNode.querySelector('.error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+    });
+</script>
+{% endblock %}

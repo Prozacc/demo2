@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block title %}数据概览 - Flask + OpenGauss 示例{% endblock %}
+
+{% block content %}
+<div class="fade-in transition-all duration-700 opacity-0 transform translate-y-4">
+    <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold mb-6 text-gray-800">
+        <i class="fa fa-dashboard text-primary mr-2"></i>数据概览
+    </h1>
+    
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl p-6 card-shadow hover-lift">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">总用户数</p>
+                    <h3 class="text-3xl font-bold mt-1">{{ stats.total_users | default(0) }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+                    <i class="fa fa-users text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm">
+                <span class="text-green-500 flex items-center">
+                    <i class="fa fa-arrow-up mr-1"></i> 12% 较上月
+                </span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow hover-lift">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">活跃用户</p>
+                    <h3 class="text-3xl font-bold mt-1">{{ stats.active_users | default(0) }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-secondary">
+                    <i class="fa fa-check-circle text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm">
+                <span class="text-green-500 flex items-center">
+                    <i class="fa fa-arrow-up mr-1"></i> 8% 较上月
+                </span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow hover-lift">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">活动记录</p>
+                    <h3 class="text-3xl font-bold mt-1">{{ stats.total_activities | default(0) }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-accent">
+                    <i class="fa fa-history text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm">
+                <span class="text-green-500 flex items-center">
+                    <i class="fa fa-arrow-up mr-1"></i> 23% 较上月
+                </span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow hover-lift">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">平均年龄</p>
+                    <h3 class="text-3xl font-bold mt-1">{{ stats.avg_age | default(0) }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-500">
+                    <i class="fa fa-calendar text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm">
+                <span class="text-red-500 flex items-center">
+                    <i class="fa fa-arrow-down mr-1"></i> 2% 较上月
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 图表区域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fa fa-pie-chart text-primary mr-2"></i>用户年龄分布
+            </h3>
+            <div class="h-80">
+                <canvas id="ageDistributionChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fa fa-line-chart text-primary mr-2"></i>近7天活动统计
+            </h3>
+            <div class="h-80">
+                <canvas id="weeklyActivityChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow lg:col-span-2">
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fa fa-bar-chart text-primary mr-2"></i>活动类型分布
+            </h3>
+            <div class="h-80">
+                <canvas id="actionTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 最近动态 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 最近用户 -->
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fa fa-user-plus text-primary mr-2"></i>最近加入用户
+                </h3>
+                <a href="{{ url_for('users_list') }}" class="text-primary hover:underline text-sm">
+                    查看全部 <i class="fa fa-angle-right ml-1"></i>
+                </a>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="py-3 text-left text-sm font-medium text-gray-500">用户名</th>
+                            <th class="py-3 text-left text-sm font-medium text-gray-500">邮箱</th>
+                            <th class="py-3 text-left text-sm font-medium text-gray-500">年龄</th>
+                            <th class="py-3 text-left text-sm font-medium text-gray-500">加入日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <td class="py-3 text-sm">
+                                <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-primary hover:underline">
+                                    {{ user.username }}
+                                </a>
+                            </td>
+                            <td class="py-3 text-sm">{{ user.email }}</td>
+                            <td class="py-3 text-sm">{{ user.age or 'N/A' }}</td>
+                            <td class="py-3 text-sm">{{ user.join_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="py-4 text-center text-gray-500">暂无用户数据</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 最近活动 -->
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fa fa-clock-o text-primary mr-2"></i>最近活动
+                </h3>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">实时更新</span>
+            </div>
+            
+            <div class="space-y-4">
+                {% for activity in activities %}
+                <div class="flex items-start p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                        <i class="fa fa-user text-primary"></i>
+                    </div>
+                    <div class="ml-3 flex-grow">
+                        <p class="text-sm">
+                            <span class="font-medium">{{ activity.username }}</span>
+                            <span class="text-gray-600 ml-1">{{ activity.action }}</span>
+                        </p>
+                        <p class="text-xs text-gray-400 mt-1">
+                            {{ activity.action_time.strftime('%Y-%m-%d %H:%M') }} · {{ activity.ip_address }}
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fa fa-inbox text-3xl mb-2"></i>
+                    <p>暂无活动记录</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 等待页面加载完成
+    document.addEventListener('DOMContentLoaded', function() {
+        // 从API获取统计数据
+        fetch('{{ url_for('stats_api') }}')
+            .then(response => response.json())
+            .then(data => {
+                // 年龄分布图表
+                const ageCtx = document.getElementById('ageDistributionChart').getContext('2d');
+                new Chart(ageCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.age_distribution.labels,
+                        datasets: [{
+                            data: data.age_distribution.data,
+                            backgroundColor: [
+                                '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    boxWidth: 12
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true,
+                            duration: 2000,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
+
+                // 周活动图表
+                const weeklyCtx = document.getElementById('weeklyActivityChart').getContext('2d');
+                new Chart(weeklyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.weekly_activities.labels,
+                        datasets: [{
+                            label: '活动数量',
+                            data: data.weekly_activities.data,
+                            fill: true,
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderColor: '#3b82f6',
+                            tension: 0.4,
+                            pointBackgroundColor: '#3b82f6',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 2000,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
+
+                // 活动类型图表
+                const actionCtx = document.getElementById('actionTypeChart').getContext('2d');
+                new Chart(actionCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.action_types.labels,
+                        datasets: [{
+                            label: '活动次数',
+                            data: data.action_types.data,
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(139, 92, 246, 0.8)',
+                                'rgba(245, 158, 11, 0.8)',
+                                'rgba(239, 68, 68, 0.8)'
+                            ],
+                            borderRadius: 6,
+                            barThickness: 30
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1500,
+                            easing: 'easeOutBounce'
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('获取统计数据失败:', error);
+                // 显示错误信息
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                            <i class="fa fa-exclamation-triangle text-3xl mb-2"></i>
+                            <p>无法加载图表数据</p>
+                        </div>
+                    `;
+                });
+            });
+    });
+</script>
+{% endblock %}
